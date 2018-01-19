@@ -1,19 +1,19 @@
 #ifndef _MAILBOX_H_
 #define _MAILBOX_H_
 
-#define MAILBOX_BASE            IO_BASE + 0xB880
+#define MAILBOX_BASE            (IO_BASE + 0xB880)
 
-#define MAILBOX0_READ           MAILBOX_BASE + 0x00
-#define MAILBOX0_PEEK           MAILBOX_BASE + 0x10
-#define MAILBOX0_STATUS         MAILBOX_BASE + 0x18
-#define MAILBOX0_SENDER         MAILBOX_BASE + 0x14
-#define MAILBOX0_CONFIG         MAILBOX_BASE + 0x1C
+#define MAILBOX0_READ           (MAILBOX_BASE + 0x00)
+#define MAILBOX0_PEEK           (MAILBOX_BASE + 0x10)
+#define MAILBOX0_STATUS         (MAILBOX_BASE + 0x18)
+#define MAILBOX0_SENDER         (MAILBOX_BASE + 0x14)
+#define MAILBOX0_CONFIG         (MAILBOX_BASE + 0x1C)
 
-#define MAILBOX1_WRITE          MAILBOX_BASE + 0x20
-#define MAILBOX1_PEEK           MAILBOX_BASE + 0x30
-#define MAILBOX1_STATUS         MAILBOX_BASE + 0x38
-#define MAILBOX1_SENDER         MAILBOX_BASE + 0x34
-#define MAILBOX1_CONFIG         MAILBOX_BASE + 0x3C
+#define MAILBOX1_WRITE          (MAILBOX_BASE + 0x20)
+#define MAILBOX1_PEEK           (MAILBOX_BASE + 0x30)
+#define MAILBOX1_STATUS         (MAILBOX_BASE + 0x38)
+#define MAILBOX1_SENDER         (MAILBOX_BASE + 0x34)
+#define MAILBOX1_CONFIG         (MAILBOX_BASE + 0x3C)
 
 typedef enum {
 	MAILBOX_CHANNEL_POWER 	= 0x0,							// Power Management Interface 
@@ -138,5 +138,8 @@ typedef enum {
 #define MAILBOX_RESPONSE   	0x80000000
 #define MAILBOX_FULL    	0x80000000
 #define MAILBOX_EMPTY   	0x40000000
+
+void mailbox_write(MailBoxChannel channel, uint32_t address);
+uint32_t mailbox_read(MailBoxChannel channel);
 
 #endif

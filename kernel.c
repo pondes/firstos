@@ -11,8 +11,8 @@ static int cursor_x = 0;
 static int cursor_y = 0;
 
 void init_screen();
-void print_char(unsigned char *fb, int code);
-void print_string(unsigned char *fb, char *str);
+void print_char(uint32_t *fb, int code);
+void print_string(uint32_t *fb, char *str);
 
 void kernel_main(unsigned int r0, unsigned int r1, unsigned int atags)
 {
@@ -35,45 +35,38 @@ void write_uint32(uint32_t *address, int n, ...)
 
 void init_screen()
 {
-	#define FB_INDEX 31
-	write_uint32(pt, 34,
-					34 * 4, MAILBOX_REQUEST,													// 2
+	#define FB_INDEX 24
+	write_uint32(pt, 27,
+					27 * 4, MAILBOX_REQUEST,													// 2
 					MAILBOX_TAG_SET_PHYSICAL_WIDTH_HEIGHT, 8, 8, SCREEN_WIDTH, SCREEN_HEIGHT,	// 5
 					MAILBOX_TAG_SET_VIRTUAL_WIDTH_HEIGHT, 8, 8, SCREEN_WIDTH, SCREEN_HEIGHT,	// 5
-					MAILBOX_TAG_SET_COLOUR_DEPTH, 4, 4, 8,										// 4
+					MAILBOX_TAG_SET_COLOUR_DEPTH, 4, 4, 32,										// 4
 					MAILBOX_TAG_SET_VIRTUAL_OFFSET, 8, 8, 0, 0,									// 5
-					MAILBOX_TAG_SET_PALETTE, 0x10, 0x10, 0, 2, 0x00000000, 0xFFFFFFFF,			// 7
 					MAILBOX_TAG_ALLOCATE_FRAMEBUFFER, 8, 8, /* FB_INDEX */ 0, 0,				// 5
 					0																			// 1
 	);
 
-	uint32_t addr_with_channel = ((uint32_t) pt) | MAILBOX_CHANNEL_TAGS;		// Add channel tag code to last 4 bits
-
-	while(VAL_UINT32(MAILBOX1_STATUS) & MAILBOX_FULL) /* Do nothing */;			// Wait if mailbox is full
-	VAL_UINT32(MAILBOX1_WRITE + MAILBOX_CHANNEL_TAGS) = addr_with_channel;		// Write address of message
+	mailbox_write(MAILBOX_CHANNEL_TAGS, (uint32_t) pt);
 	
-	for(;;)
+	if((mailbox_read(MAILBOX_CHANNEL_TAGS) & ~0xF) == (uint32_t) pt)	// If first 28-bits and 0000 is pt
 	{
-		while(VAL_UINT32(MAILBOX0_STATUS) & MAILBOX_EMPTY) /* Do nothing */;	// Wait if mailbox is empty 
-		uint32_t r = VAL_UINT32(MAILBOX0_READ);									// Read message
-		if(r == addr_with_channel)					// If it is a response and it is for our request
+		uint32_t *fb = (uint32_t *) BUSTOPHY(pt[FB_INDEX]);
+		pt[FB_INDEX] = (uint32_t) fb;
+
+		for (int x = 10; x < 20; x++)
 		{
-			break;			
+			*(fb + SCREEN_WIDTH * 100 + x) = 0xFF0000;
 		}
+
+		print_string(fb, "Hello,\nWorld! This is refactored!\n");
 	}
-
-	unsigned char *fb = (unsigned char *) BUSTOPHY(pt[FB_INDEX]);
-	pt[FB_INDEX] = (uint32_t) fb;
-
-	for (int x = 10; x < 20; x++)
+	else
 	{
-		*(fb + SCREEN_WIDTH * 10 + x) = 0x01;
+		// There was error initialising framebuffer 
 	}
-
-	print_string(fb, "Hello,\nWorld! This is refactored!\n");
 }
 
-void print_char(unsigned char *fb, int code)
+void print_char(uint32_t *fb, int code)
 {
 	if (code == 10)
 	{
@@ -83,7 +76,7 @@ void print_char(unsigned char *fb, int code)
 	}
 
 	char *char_map = font8x8_basic[code];
-	unsigned char *fbp = fb + (cursor_x + cursor_y * SCREEN_WIDTH);
+	uint32_t *fbp = fb + (cursor_x + cursor_y * SCREEN_WIDTH);
 
 	for (int r = 0; r < 8; r++)
 	{
@@ -92,7 +85,7 @@ void print_char(unsigned char *fb, int code)
 		{
 			if (row_map & 1 << b)
 			{
-				fbp[b] = 1;
+				fbp[b] = 0x00FF00;
 			}
 			else
 			{
@@ -104,7 +97,7 @@ void print_char(unsigned char *fb, int code)
 	cursor_x += 9;
 }
 
-void print_string(unsigned char *fb, char *str)
+void print_string(uint32_t *fb, char *str)
 {
 	int i = 0;
 	while (str[i] != '\0')
