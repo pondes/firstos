@@ -8,4 +8,6 @@
 #define VAL_UINT32(addr)        *((volatile uint32_t *) (addr))
 #define BUSTOPHY(addr)          (addr & 0x3FFFFFFF)
 
+void write_uint32(uint32_t *address, int n, ...);
+
 #endif
